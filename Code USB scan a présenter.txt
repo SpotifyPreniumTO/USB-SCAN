@@ -1,0 +1,123 @@
+import webbrowser
+from datetime import datetime
+import wmi
+
+
+def get_usb_devices():
+    usb_devices = []
+    c = wmi.WMI()
+    for device in c.Win32_PnPEntity():
+        if device.PNPClass == "USB":
+            usb_devices.append({
+                "name": device.Name or "N/A",
+                "manufacturer": device.Manufacturer or "Fabricant inconnu",
+                "device_id": device.DeviceID or "N/A",
+                "description": device.Description or "N/A"
+
+            })
+    return usb_devices
+
+
+# Liste pour stocker les réponses
+reponses_utilisateur = []
+
+# Boucle principale
+continu = True
+while continu:
+    prenom = input("Quel est votre prénom ? ")
+    nom = input("Quel est votre nom ? ")
+    num_poste = input("Quel est le numéro de votre poste ? ")
+
+    # Capturer la date/heure actuelle pour CETTE réponse
+    date_heure = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    while True:
+        reponse = input("Souhaitez-vous continuer ? (oui/non) ").strip().lower()
+        if reponse in ["oui", "non"]:
+            break
+        print("Veuillez répondre par 'oui' ou 'non'.")
+
+    # Stocker TOUTES les informations
+    reponses_utilisateur.append({
+        "nom": nom,
+        "prenom": prenom,
+        "num_poste": num_poste,
+        "reponse": reponse,
+        "date": date_heure
+    })
+
+    if reponse == "non":
+        continu = False
+        print("Au revoir !")
+
+# Générer le contenu HTML
+contenu_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Réponses de l'utilisateur</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Historique des réponses</h1>
+    <table>
+        <tr>
+            <th>Prénom</th>
+            <th>Nom</th>
+            <th>N° Poste</th>
+            <th>Réponse</th>
+            <th>Date/Heure</th>
+        </tr>
+"""
+
+# Ajouter les réponses au HTML
+for reponse in reponses_utilisateur:
+    contenu_html += f"""
+        <tr>
+            <td>{reponse['prenom']}</td>
+            <td>{reponse['nom']}</td>
+            <td>{reponse['num_poste']}</td>
+            <td>{reponse['reponse']}</td>
+            <td>{reponse['date']}</td>
+        </tr>
+"""
+
+contenu_html += """
+    </table>
+    <h1>Périphériques USB détectés</h1>
+    <table>
+        <tr>
+            <th>Nom</th>
+            <th>Fabricant</th>
+            <th>Description</th>
+            <th>ID Matériel</th>
+        </tr>
+"""
+
+for usb in get_usb_devices():
+    contenu_html += f"""
+        <tr>
+            <td>{usb['name']}</td>
+            <td>{usb['manufacturer']}</td>
+            <td>{usb['description']}</td>
+            <td>{usb['device_id']}</td>
+        </tr>
+"""
+
+contenu_html += """
+    </table>
+</body>
+</html>
+"""
+
+# Écrire et ouvrir le fichier
+with open("reponses_utilisateur.html", "w", encoding="utf-8") as fichier:
+    fichier.write(contenu_html)
+
+webbrowser.open("reponses_utilisateur.html")
